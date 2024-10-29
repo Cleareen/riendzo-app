@@ -1,0 +1,8 @@
+const popularTrips = {
+  "Paris, France": [
+    "",
+    "",
+    "",
+    "",
+  ],
+};
