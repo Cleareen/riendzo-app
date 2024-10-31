@@ -213,6 +213,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           final endDate = formatDate(trip['endDate'] ?? '');     // Updated
           final budget = trip['budget'] ?? 'No budget specified';
           final tripName = trip['tripName'] ?? 'Unnamed trip';
+          final description = trip['description'] ?? 'No description available';
           final interest = trip['interest'] ?? 'No interest specified';
           final tripType = trip['travelType'] ?? '';
 
@@ -251,7 +252,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
 
                     // Card for trip details with elevation and shadow
                     Card(
-                      elevation: 4,
+                      elevation: 42,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -270,6 +271,13 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
+                            ),
+                            const SizedBox(height: 16.0),
+
+                            Text(
+                              description,
+                              style: const TextStyle(fontSize: 16, color: Colors.black87),
+                              textAlign: TextAlign.justify,
                             ),
                             const SizedBox(height: 16.0),
 
@@ -417,7 +425,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         ),
         const SizedBox(width: 8.0),
         Expanded(
-          flex: 2,
+          flex: 4,
           child: Text(
             value,
             style: const TextStyle(fontSize: 16),

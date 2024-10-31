@@ -181,11 +181,7 @@ class _FeedScreenState extends State<FeedScreen> {
               return ListView(
                 children: [
                   _buildPostInputSection(),
-                  Sections(
-                    sectionName: "Moments",
-                    trailingText: "",
-                    veritcalMargin: 15,
-                  ),
+
                   const Stories(
                     radius: 35,
                     margin: .01,

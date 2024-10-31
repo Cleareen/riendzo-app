@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:riendzo/views/my_trips/booking/widgets/booking_header.dart';
 import 'package:riendzo/views/my_trips/booking/widgets/custom_button.dart';
 import 'package:riendzo/views/my_trips/booking/widgets/custom_text_field.dart';
@@ -18,22 +20,42 @@ class EditTripScreen extends StatefulWidget {
 }
 
 class _EditTripScreenState extends State<EditTripScreen> {
-  final TextEditingController _startDateController = TextEditingController();
-  final TextEditingController _endDateController = TextEditingController();
-  final TextEditingController _dateController = TextEditingController();
   final TextEditingController _budgetController = TextEditingController();
   final TextEditingController _interestController = TextEditingController();
   final TextEditingController _tripNameController = TextEditingController();
   final TextEditingController _destinationController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _datesController = TextEditingController();
+  final TextEditingController _startDateController = TextEditingController();
+  final TextEditingController _endDateController = TextEditingController();
+  DateTimeRange? _selectedDateRange;
+  final DateFormat dateFormat = DateFormat('dd MMM');
   File? _selectedImage;
   String? _imageUrl;
 
   bool _isLoading = true;
 
+  get http => null;
+
   @override
   void initState() {
     super.initState();
     _fetchTripData();
+  }
+
+  Future<List<String>> getSuggestions(String query) async {
+    final apiKey = 'AIzaSyBS6FrbtuEV7MD2GsyZ7lkFehwLDo_U7BY'; // Replace with your API key
+    final url =
+        'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$query&key=$apiKey';
+
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      final predictions = json['predictions'] as List;
+      return predictions.map((p) => p['description'] as String).toList();
+    } else {
+      throw Exception('Failed to load suggestions');
+    }
   }
 
   // Fetch trip data from Firebase Firestore
@@ -49,10 +71,11 @@ class _EditTripScreenState extends State<EditTripScreen> {
         _destinationController.text = data['destination'] ?? '';
         _startDateController.text = data['startDate'] ?? '';
         _endDateController.text = data['endDate'] ?? '';
-        _dateController.text = data['date'] ?? '';
+        _datesController.text = data['date'] ?? '';
         _budgetController.text = data['budget'] ?? '';
         _interestController.text = data['interest'] ?? '';
         _tripNameController.text = data['tripName'] ?? '';
+        _descriptionController.text = data['description'] ?? '';
         _imageUrl = data['imagePath'];
       }
       setState(() {
@@ -77,8 +100,9 @@ class _EditTripScreenState extends State<EditTripScreen> {
 
     if (_startDateController.text.isEmpty ||
         _endDateController.text.isEmpty ||
-        _dateController.text.isEmpty ||
+        _datesController.text.isEmpty ||
         _budgetController.text.isEmpty ||
+        _descriptionController.text.isEmpty ||
         _tripNameController.text.isEmpty ||
         _destinationController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -113,10 +137,11 @@ class _EditTripScreenState extends State<EditTripScreen> {
         'destination': _destinationController.text,
         'startDate': _startDateController.text,
         'endDate': _endDateController.text,
-        'date': _dateController.text,
+        'date': _datesController.text,
         'budget': _budgetController.text,
         'interest': _interestController.text,
         'tripName': _tripNameController.text,
+        'description': _descriptionController.text,
         'imagePath': imageUrl,
       });
       Navigator.pop(context);
@@ -161,7 +186,7 @@ class _EditTripScreenState extends State<EditTripScreen> {
   void dispose() {
     _startDateController.dispose();
     _endDateController.dispose();
-    _dateController.dispose();
+    _datesController.dispose();
     _budgetController.dispose();
     _interestController.dispose();
     _tripNameController.dispose();
@@ -229,19 +254,33 @@ class _EditTripScreenState extends State<EditTripScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 10.0),
               child: ListView(
                 children: [
-                  CustomBookingTextField(
-                    controller: _startDateController,
-                    icon: Icons.calendar_today,
-                    text: 'Start Date',
-                    hintText: 'Enter start date',
-                    keyboardType: TextInputType.datetime, readOnly: false,
-                  ),
-                  CustomBookingTextField(
-                    controller: _endDateController,
-                    icon: Icons.calendar_today,
-                    text: 'End Date',
-                    hintText: 'Enter end date',
-                    keyboardType: TextInputType.datetime, readOnly: false,
+                  GestureDetector(
+                    onTap: () async {
+                      DateTimeRange? pickedRange = await showDateRangePicker(
+                        context: context,
+                        firstDate: DateTime(2024),
+                        lastDate: DateTime(2030),
+                        initialDateRange: DateTimeRange(
+                          start: DateTime.now(),
+                          end: DateTime.now().add(const Duration(days: 7)),
+                        ),
+                      );
+
+                      if (pickedRange != null) {
+                        _datesController.text = '${dateFormat.format(pickedRange.start)} - ${dateFormat.format(pickedRange.end)}';
+                        _selectedDateRange = pickedRange; // Save the selected date range
+                      }
+                    },
+                    child: AbsorbPointer(
+                      child: CustomBookingTextField(
+                        controller: _datesController,
+                        icon: Icons.calendar_today_outlined,
+                        text: 'Dates',
+                        hintText: 'Select date range',
+                        keyboardType: TextInputType.datetime,
+                        readOnly: true,
+                      ),
+                    ),
                   ),
                   CustomBookingTextField(
                     controller: _budgetController,
@@ -261,6 +300,12 @@ class _EditTripScreenState extends State<EditTripScreen> {
                     controller: _tripNameController,
                     text: 'Trip Name',
                     hintText: 'e.g. Vacation 2024',
+                    keyboardType: TextInputType.text, readOnly: false,
+                  ),
+                  CustomBookingTextField(
+                    controller: _descriptionController,
+                    text: 'Description',
+                    hintText: 'e.g. description',
                     keyboardType: TextInputType.text, readOnly: false,
                   ),
                   const SizedBox(height: 20),

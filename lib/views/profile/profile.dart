@@ -6,11 +6,13 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:riendzo/views/authentication/methods/signOut_method.dart';
+import 'package:riendzo/views/home/home.dart';
 import 'package:riendzo/views/my_trips/my_trips.dart';
 import 'package:riendzo/views/profile/ContactUsScreen.dart';
 import 'package:riendzo/views/profile/widgets/profile_card.dart';
 import 'package:riendzo/views/profile/widgets/profile_summary.dart';
 import '../../widgets/Shared Widgets/user_avatar.dart';
+import '../../widgets/persistent_navbar.dart';
 import '../../widgets/screen_sections.dart';
 import 'LegalInformationScreen.dart';
 import 'SupportCenterScreen.dart';
@@ -229,17 +231,29 @@ class _ProfileState extends State<Profile> {
               children: [
                 const SizedBox(height: 10),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Sections(
-                      sectionName: 'Profile',
-                      trailingText: '',
-                      veritcalMargin: 0,
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back), // Back button icon
+                      onPressed: () {
+                        // Navigates to the Home screen using pushReplacement
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) {
+                            // When navigating back to Home, reset the index to 0 and show the Bottom Navigation Bar
+                            return const MainNavigationScreen(); // You can pass a parameter to reset the state if needed
+                          }), // Navigates to the Home screen
+                        );
+                      },
                     ),
-                    const SizedBox(
-                      height: 5,
-                      width: 5,
-                    ),
+
+                    const SizedBox(width: 120), // Add spacing between the back button and the section name
+                    Expanded(
+                        child: Sections(
+                          sectionName: 'Profile',
+                          trailingText: '',
+                          veritcalMargin: 0,
+                        ),
+                      ),
                   ],
                 ),
 

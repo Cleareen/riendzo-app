@@ -7,27 +7,32 @@ class CustomBookingTextField extends StatelessWidget {
   final String hintText;
   final TextInputType keyboardType;
 
+
   const CustomBookingTextField({
     Key? key,
     this.controller, // Add this line to initialize controller
     this.icon,
     required this.text,
     required this.hintText,
-    required this.keyboardType, required bool readOnly,
+    required this.keyboardType,
+    required bool readOnly,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10.0),
+      padding: const EdgeInsets.symmetric(vertical: 5.0),
       child: TextField(
         controller: controller, // Controller to manage input text
         keyboardType: keyboardType,
+        maxLines: null,
+        textAlign: TextAlign.justify,
         decoration: InputDecoration(
           prefixIcon: icon != null ? Icon(icon) : null, // Add icon if provided
           labelText: text, // Field label
-          hintText: hintText, // Placeholder text
-          border: const OutlineInputBorder(), // Box around the field
+          hintText: hintText,
+          // Placeholder text
+           // Box around the field
         ),
       ),
     );

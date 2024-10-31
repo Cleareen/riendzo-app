@@ -54,7 +54,7 @@ class _SearchCardState extends State<SearchCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Destination Field with Autocomplete
-            const Text('Destination', style: TextStyle(color: Colors.grey)),
+            const Text('Search for Trips', style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 8),
             TypeAheadField<String>(
               textFieldConfiguration: TextFieldConfiguration(

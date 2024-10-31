@@ -27,32 +27,40 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void _onTabSelected(int index) {
     setState(() {
       _currentIndex = index;
-
-      // Hide BottomNavigationBar when navigating to the Profile screen
+      // Hide BottomNavigationBar on Profile
       _isBottomNavVisible.value = index != 3;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
+
+      return Scaffold(
         body: NotificationListener<ScrollNotification>(
           onNotification: (ScrollNotification scrollInfo) {
             if (scrollInfo is ScrollUpdateNotification) {
               if (scrollInfo.scrollDelta != null) {
-                if (scrollInfo.scrollDelta! > 0) {
-                  // Scrolling down, hide BottomNavigationBar
+                // Hide or show BottomNavigationBar based on scroll direction
+                if (scrollInfo.scrollDelta! > 0 && _currentIndex != 3) {
                   _isBottomNavVisible.value = false;
-                } else if (scrollInfo.scrollDelta! < 0) {
-                  // Scrolling up, show BottomNavigationBar
+                } else if (scrollInfo.scrollDelta! < 0 && _currentIndex != 3) {
                   _isBottomNavVisible.value = true;
                 }
               }
             }
             return true;
           },
-          child: _screens[_currentIndex], // Display the current screen based on the selected tab
+          child: Column(
+            children: [
+              Expanded(
+                child: IndexedStack(
+                  index: _currentIndex,
+                  children: _screens,
+                ),
+              ),
+
+            ],
+          ),
         ),
         bottomNavigationBar: ValueListenableBuilder<bool>(
           valueListenable: _isBottomNavVisible,
@@ -62,43 +70,44 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               height: isVisible ? kBottomNavigationBarHeight : 0, // Hide/Show based on visibility
               child: Wrap(
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.transparent), // Set the border to transparent
-                    ),
-                    child: BottomNavigationBar(
-                      currentIndex: _currentIndex, // Highlight the current selected tab
-                      onTap: _onTabSelected, // Handle tab taps
-                      items: const [
-                        BottomNavigationBarItem(
-                          icon: Icon(Icons.home),
-                          label: 'Discovery',
-                        ),
-                        BottomNavigationBarItem(
-                          icon: Icon(Icons.explore),
-                          label: 'Feed',
-                        ),
-                        BottomNavigationBarItem(
-                          icon: Icon(Icons.book),
-                          label: 'Trips',
-                        ),
-                        BottomNavigationBarItem(
-                          icon: Icon(Icons.person),
-                          label: 'Profile',
-                        ),
-                      ],
-                      selectedItemColor: Colors.white, // Customize selected item color
-                      unselectedItemColor: Colors.black54, // Customize unselected item color
-                      backgroundColor: Colors.blue, // Set the BottomNavigationBar background color to blue
-                      type: BottomNavigationBarType.fixed, // Ensure the background color works
-                    ),
+               BottomNavigationBar(
+                currentIndex: _currentIndex, // Highlight the current selected tab
+                onTap: (index) {
+                  _onTabSelected(index);
+                  // Reset visibility when switching tabs
+                  _isBottomNavVisible.value = index != 3; // Hide for Profile
+                },
+                items: const [
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.home),
+                    label: 'Discovery',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.explore),
+                    label: 'Feed',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.book),
+                    label: 'Trips',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.person),
+                    label: 'Profile',
                   ),
                 ],
+                selectedItemColor: Colors.white, // Customize selected item color
+                unselectedItemColor: Colors.black54, // Customize unselected item color
+                backgroundColor: Colors.blue, // Set the BottomNavigationBar background color
+                type: BottomNavigationBarType.fixed, // Ensure the background color works
               ),
+
+                ]
+              )
             );
+
           },
-        ),
-      ),
-    );
+        )
+      );
+
   }
 }

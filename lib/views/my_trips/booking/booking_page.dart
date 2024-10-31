@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart'; // For formatting dates
+import 'package:riendzo/views/my_trips/booking/widgets/CustomBookingDropdown.dart';
 import 'package:riendzo/views/my_trips/booking/widgets/booking_header.dart';
 import 'package:riendzo/views/my_trips/booking/widgets/custom_button.dart';
 import 'package:riendzo/views/my_trips/booking/widgets/custom_text_field.dart';
@@ -21,12 +22,17 @@ class BookingPage extends StatefulWidget {
 }
 
 class _BookingPageState extends State<BookingPage> {
-  final TextEditingController _startDateController = TextEditingController();
-  final TextEditingController _endDateController = TextEditingController();
   final TextEditingController _budgetController = TextEditingController();
-  final TextEditingController _interestController = TextEditingController();
+  String? _selectedInterest;
   final TextEditingController _tripNameController = TextEditingController();
   final TextEditingController _destinationController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _datesController = TextEditingController();
+  DateTimeRange? _selectedDateRange;
+  final DateFormat dateFormat = DateFormat('dd MMM');
+
+
+
   File? _selectedImage;
   String? _imageUrl;
   bool _isLoading = false;
@@ -76,27 +82,21 @@ class _BookingPageState extends State<BookingPage> {
       return;
     }
 
-    // Check if start date and end date are provided
-    if (_startDateController.text.isEmpty) {
+    // Check if date range is provided
+    if (_selectedDateRange == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a start date')),
+        const SnackBar(content: Text('Please select a date range')),
       );
       return;
     }
 
-    if (_endDateController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select an end date')),
-      );
-      return;
-    }
-
-    // Parse the selected start and end dates
-    final DateTime startDate = DateFormat('dd/MM/yyyy').parse(_startDateController.text);
-    final DateTime endDate = DateFormat('dd/MM/yyyy').parse(_endDateController.text);
-    final DateTime now = DateTime.now();
+    // Extract and format start and end dates
+    final DateTime startDate = _selectedDateRange!.start;
+    final DateTime endDate = _selectedDateRange!.end;
+    final DateFormat dateFormat = DateFormat("dd/MM/yyyy");
 
     // Validate that endDate is after startDate and not today or earlier
+    final DateTime now = DateTime.now();
     if (endDate.isBefore(startDate) || endDate.isAtSameMomentAs(now)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('End date must be after the start date and cannot be today')),
@@ -136,11 +136,12 @@ class _BookingPageState extends State<BookingPage> {
       await trips.add({
         'userId': user?.uid,
         'destination': _destinationController.text,
-        'startDate': _startDateController.text,
-        'endDate': _endDateController.text,
+        'startDate': dateFormat.format(startDate),
+        'endDate': dateFormat.format(endDate),
         'budget': "\$${_budgetController.text}", // Save budget with $
-        'interest': _interestController.text,
+        'interest': _selectedInterest,
         'tripName': _tripNameController.text,
+        'description': _descriptionController.text,
         'imagePath': imageUrl,
         'status': 'ongoing',
         'travelType': isSoloSelected ? 'Solo' : 'Friends', // Save travel type
@@ -156,6 +157,7 @@ class _BookingPageState extends State<BookingPage> {
       });
     }
   }
+
 
 
 
@@ -189,33 +191,15 @@ class _BookingPageState extends State<BookingPage> {
     });
   }
 
-  // Date picker function for start and end dates
-  Future<void> _selectDate(BuildContext context,
-      TextEditingController controller) async {
-    DateTime now = DateTime.now();
-    DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: now,
-      firstDate: now, // Prevent selecting dates before today
-      lastDate: DateTime(2101),
-    );
 
-    if (picked != null) {
-      setState(() {
-        controller.text = DateFormat('dd/MM/yyyy').format(
-            picked); // Format date as dd/MM/yyyy
-      });
-    }
-  }
 
   @override
   void dispose() {
-    _startDateController.dispose();
-    _endDateController.dispose();
     _budgetController.dispose();
-    _interestController.dispose();
     _tripNameController.dispose();
     _destinationController.dispose();
+    _datesController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -228,44 +212,33 @@ class _BookingPageState extends State<BookingPage> {
           Container(
             padding: const EdgeInsets.only(left: 15, top: 10),
             width: double.infinity,
-            height: MediaQuery
-                .of(context)
-                .size
-                .height * .2,
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: NetworkImage(
-                    "https://images.pexels.com/photos/2341830/pexels-photo-2341830.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"),
-                fit: BoxFit.cover,
-              ),
-            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const BookingHeader(
                   text: 'Trip Information',
-                  color: Colors.white,
+                  color: Colors.black,
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
                       "I want to go to...",
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.black),
                     ),
                     TypeAheadField<String>(
                       textFieldConfiguration: TextFieldConfiguration(
                         controller: _destinationController,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: Colors.black,
                           fontWeight: FontWeight.w700,
                           fontSize: 23,
                         ),
                         decoration: const InputDecoration(
                           hintText: "Enter destination",
-                          hintStyle: TextStyle(color: Colors.white70),
-                          border: InputBorder.none,
+                          hintStyle: TextStyle(color: Colors.black),
+
                         ),
                       ),
                       suggestionsCallback: (pattern) async {
@@ -296,33 +269,38 @@ class _BookingPageState extends State<BookingPage> {
               padding: const EdgeInsets.symmetric(horizontal: 10.0),
               children: [
                 GestureDetector(
-                  onTap: () => _selectDate(context, _startDateController),
+                  onTap: () async {
+                    DateTimeRange? pickedRange = await showDateRangePicker(
+                      context: context,
+                      firstDate: DateTime.now(), // Disable past dates
+                      lastDate: DateTime(2030),
+                      initialDateRange: DateTimeRange(
+                        start: DateTime.now(),
+                        end: DateTime.now().add(const Duration(days: 7)),
+                      ),
+                    );
+
+                    if (pickedRange != null) {
+                      _datesController.text = '${dateFormat.format(pickedRange.start)} - ${dateFormat.format(pickedRange.end)}';
+                      _selectedDateRange = pickedRange; // Save the selected date range
+                    }
+                  },
                   child: AbsorbPointer(
                     child: CustomBookingTextField(
-                      controller: _startDateController,
+                      controller: _datesController,
                       icon: Icons.calendar_today_outlined,
-                      text: 'Start Date',
-                      hintText: 'Select start date',
+                      text: 'Dates',
+                      hintText: 'Select date range',
                       keyboardType: TextInputType.datetime,
                       readOnly: true,
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                GestureDetector(
-                  onTap: () => _selectDate(context, _endDateController),
-                  child: AbsorbPointer(
-                    child: CustomBookingTextField(
-                      controller: _endDateController,
-                      icon: Icons.calendar_today_outlined,
-                      text: 'End Date',
-                      hintText: 'Select end date',
-                      keyboardType: TextInputType.datetime,
-                      readOnly: true,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
+
+
+
+
+                const SizedBox(height: 1),
                 CustomBookingTextField(
                   controller: _budgetController,
                   icon: Icons.attach_money,
@@ -331,13 +309,21 @@ class _BookingPageState extends State<BookingPage> {
                   keyboardType: TextInputType.number,
                   readOnly: false,
                 ),
-                CustomBookingTextField(
-                  controller: _interestController,
+                CustomBookingDropdown(
+                  interests: [
+                    "Adventure", "Beaches", "Culture", "Cuisine", "Exploration",
+                    "Festivals", "Hiking", "History", "Relaxation", "Safari",
+                    "Scenery", "Sports", "Wildlife", "Cruises", "Mountains",
+                    "Photography", "Roadtrips", "Shopping", "Spa", "Waterfalls",
+                  ],
+                  selectedInterest: _selectedInterest,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedInterest = value;
+                    });
+                  },
                   icon: Icons.favorite_outline,
-                  text: 'Choose your interest',
-                  hintText: 'e.g. Beach, Hiking',
-                  keyboardType: TextInputType.text,
-                  readOnly: false,
+                  hintText: 'Choose your interest',
                 ),
                 CustomBookingTextField(
                   controller: _tripNameController,
@@ -348,14 +334,14 @@ class _BookingPageState extends State<BookingPage> {
                   readOnly: false,
                 ),
                 CustomBookingTextField(
-                  controller: _budgetController,
+                  controller: _descriptionController,
                   icon: Icons.description_outlined,
                   text: 'Trip Description',
                   hintText: 'Trip Description',
-                  keyboardType: TextInputType.text,
+                  keyboardType: TextInputType.multiline,
                   readOnly: false,
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 5),
 
                 // Image upload section
                 GestureDetector(
@@ -378,7 +364,7 @@ class _BookingPageState extends State<BookingPage> {
                         : const SizedBox.shrink(),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
 
                 // Travel type section
                 Container(
@@ -422,7 +408,7 @@ class _BookingPageState extends State<BookingPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
 
                 // Save button
                 Container(
