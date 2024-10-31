@@ -16,26 +16,16 @@ class LikeButtonWidget extends StatefulWidget {
 class _LikeButtonWidgetState extends State<LikeButtonWidget> {
   late bool isLiked;
   late int likeCount;
+  bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
-    isLiked = widget.post.isLiked;
-    likeCount = widget.post.likeCount;
-
-    // Listen for real-time updates to likeCount
-    FirebaseDatabase.instance
-        .ref('posts/${widget.post.postId}/likeCount')
-        .onValue
-        .listen((event) {
-      final newLikeCount = event.snapshot.value as int;
-      setState(() {
-        likeCount = newLikeCount;
-      });
-    });
+    _fetchLikeStatus();
+    _listenToLikeCount();
   }
 
-  void _toggleLike() async {
+  void _fetchLikeStatus() async {
     final User? currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
 
@@ -43,30 +33,64 @@ class _LikeButtonWidgetState extends State<LikeButtonWidget> {
         .ref('posts/${widget.post.postId}/likes/${currentUser.uid}');
 
     final likeSnapshot = await likeRef.get();
+    setState(() {
+      isLiked = likeSnapshot.exists && likeSnapshot.value == true;
+    });
+  }
+
+  void _listenToLikeCount() {
+    FirebaseDatabase.instance
+        .ref('posts/${widget.post.postId}/likeCount')
+        .onValue
+        .listen((event) {
+      final newLikeCount = event.snapshot.value as int? ?? 0;
+      setState(() {
+        likeCount = newLikeCount;
+      });
+    });
+  }
+
+
+  void _toggleLike() async {
+    if (_isProcessing) return; // Debounce tap events
+    _isProcessing = true;
+
+    final User? currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    final likeRef = FirebaseDatabase.instance
+        .ref('posts/${widget.post.postId}/likes/${currentUser.uid}');
+    final likeCountRef = FirebaseDatabase.instance
+        .ref('posts/${widget.post.postId}/likeCount');
+
+    final likeSnapshot = await likeRef.get();
     final wasLiked = likeSnapshot.exists && likeSnapshot.value == true;
 
+    // Optimistically update the UI
+    setState(() {
+      isLiked = !wasLiked;
+      likeCount += wasLiked ? -1 : 1;
+    });
+
+    // Update Firebase using a transaction for `likeCount`
     if (wasLiked) {
-      // Already liked, so remove like
       await likeRef.remove();
-      await FirebaseDatabase.instance
-          .ref('posts/${widget.post.postId}/likeCount')
-          .set(likeCount - 1);
-      setState(() {
-        isLiked = false;
-        likeCount -= 1;
+      likeCountRef.runTransaction((currentCount) {
+        int updatedCount = (currentCount as int? ?? 0) - 1; // Cast to int and subtract
+        return Transaction.success(updatedCount);
       });
     } else {
-      // Not yet liked, so add like
       await likeRef.set(true);
-      await FirebaseDatabase.instance
-          .ref('posts/${widget.post.postId}/likeCount')
-          .set(likeCount + 1);
-      setState(() {
-        isLiked = true;
-        likeCount += 1;
+      likeCountRef.runTransaction((currentCount) {
+        int updatedCount = (currentCount as int? ?? 0) + 1; // Cast to int and add
+        return Transaction.success(updatedCount);
       });
     }
+
+    _isProcessing = false;
   }
+
+
 
   @override
   Widget build(BuildContext context) {
