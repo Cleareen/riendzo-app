@@ -100,7 +100,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 backgroundColor: Colors.blue, // Set the BottomNavigationBar background color
                 type: BottomNavigationBarType.fixed, // Ensure the background color works
               ),
-
+//
                 ]
               )
             );
