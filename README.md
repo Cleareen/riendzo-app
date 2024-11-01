@@ -1,5 +1,3 @@
-Here’s a README formatted with proper Markdown tags:
-
 # Riendzo - Travel Social App
 
 Welcome to **Riendzo**! Riendzo is a travel social app built to make trip planning easier and more social. With Riendzo, users can create and share travel itineraries, connect with other travelers, and exchange travel tips, making the experience of planning and sharing adventures fun and collaborative.
