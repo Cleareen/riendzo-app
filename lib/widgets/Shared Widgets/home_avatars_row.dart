@@ -29,6 +29,7 @@ class _StoriesState extends State<Stories1> {
   final DatabaseReference _dbRef = FirebaseDatabase.instance.reference().child('stories');
   final DatabaseReference _usersRef = FirebaseDatabase.instance.reference().child('users');
 
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +59,7 @@ class _StoriesState extends State<Stories1> {
   void _listenForStories() {
     final user = FirebaseAuth.instance.currentUser;
 
+    // Listening for Firestore story changes
     FirebaseFirestore.instance.collection('stories').snapshots().listen((snapshot) {
       final int currentTime = DateTime.now().millisecondsSinceEpoch;
 
@@ -67,20 +69,69 @@ class _StoriesState extends State<Stories1> {
         final String? key = doc.id;
 
         if (data != null && key != null) {
-          final Timestamp? timestamp = data['timestamp'];
-          final int storyTimestamp = timestamp?.millisecondsSinceEpoch ?? 0;
+          final int storyTimestamp = data['timestamp'] ?? 0;
 
-          // Check if the story is older than 24 hours (24 hours = 86400000 milliseconds)
           if (currentTime - storyTimestamp > 86400000) {
-            FirebaseFirestore.instance.collection('stories').doc(key).delete(); // Delete the story if it's older than 24 hours
-          } else if (docChange.type == DocumentChangeType.added) {
-            _processStoryData(key, data, user);
+            // If the story is older than 24 hours, delete it from Firestore
+            FirebaseFirestore.instance.collection('stories').doc(key).delete();
+          } else {
+            switch (docChange.type) {
+              case DocumentChangeType.added:
+                _processStoryData(key, data, user);
+                break;
+              case DocumentChangeType.modified:
+                _updateStoryData(key, data, user);
+                break;
+              case DocumentChangeType.removed:
+                _removeStoryData(key);
+                break;
+            }
           }
         }
+      }
+
+    });
+    _dbRef.onChildAdded.listen((event) {
+      final data = event.snapshot.value as Map<dynamic, dynamic>;
+      final key = event.snapshot.key;
+      _processStoryData(key!, data, user);
+    });
+
+    _dbRef.onChildChanged.listen((event) {
+      final data = event.snapshot.value as Map<dynamic, dynamic>;
+      final key = event.snapshot.key;
+      _updateStoryData(key!, data, user);
+    });
+
+    _dbRef.onChildRemoved.listen((event) {
+      final key = event.snapshot.key;
+      _removeStoryData(key!);
+    });
+  }
+
+  void _updateStoryData(String key, Map<dynamic, dynamic> value, User? user) {
+    setState(() {
+      final index = stories.indexWhere((story) => story['key'] == key);
+      if (index != -1) {
+        stories[index] = {
+          'key': key,
+          'type': value['type'],
+          'content': value['content'],
+          'userName': value['userName'], // Presuming you set userName in the value
+          'timestamp': value['timestamp']?.toString() ?? '',
+          'profilePicture': value['profilePicture'] ?? '',
+          'caption': value['caption'] ?? '',
+        };
       }
     });
   }
 
+// Remove story data
+  void _removeStoryData(String key) {
+    setState(() {
+      stories.removeWhere((story) => story['key'] == key);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
@@ -240,13 +241,19 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
 
   // Function to delete the story
   void _deleteStory() {
-    _dbRef.child(widget.storyKey).remove().then((_) {
+    FirebaseFirestore.instance
+        .collection('stories')
+        .doc(widget.storyKey)
+        .delete()
+        .then((_) {
       print('Story deleted');
       Navigator.pop(context);
-    }).catchError((error) {
+    })
+        .catchError((error) {
       print('Failed to delete story: $error');
     });
   }
+
 
   // Function to message the user
   void _messageUser() async {

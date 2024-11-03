@@ -131,6 +131,7 @@ class _FeedScreenState extends State<FeedScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: false, // Allow body to extend behind the AppBar
       appBar: FeedAppBar(),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore
@@ -141,15 +142,10 @@ class _FeedScreenState extends State<FeedScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
               child: Container(
-                color: Colors
-                    .transparent, // Set the container's color to transparent
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.blue), // Set the color of the indicator
-                    backgroundColor: Colors
-                        .transparent, // Make the background of the indicator transparent
-                  ),
+                color: Colors.transparent, // Set the container's color to transparent
+                child: const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                  backgroundColor: Colors.transparent, // Make the background of the indicator transparent
                 ),
               ),
             );
@@ -159,18 +155,13 @@ class _FeedScreenState extends State<FeedScreen> {
           return FutureBuilder<List<PostModel>>(
             future: _getPostsWithLikes(snapshot.data!.docs),
             builder: (context, futureSnapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
+              if (futureSnapshot.connectionState == ConnectionState.waiting) {
                 return Center(
                   child: Container(
-                    color: Colors
-                        .transparent, // Set the container's color to transparent
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.blue), // Set the color of the indicator
-                        backgroundColor: Colors
-                            .transparent, // Make the background of the indicator transparent
-                      ),
+                    color: Colors.transparent, // Set the container's color to transparent
+                    child: const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                      backgroundColor: Colors.transparent, // Make the background of the indicator transparent
                     ),
                   ),
                 );
@@ -181,7 +172,7 @@ class _FeedScreenState extends State<FeedScreen> {
               return ListView(
                 children: [
                   _buildPostInputSection(),
-
+                  const SizedBox(height: 10),
                   const Stories(
                     radius: 35,
                     margin: .01,
@@ -197,6 +188,7 @@ class _FeedScreenState extends State<FeedScreen> {
       ),
     );
   }
+
 
 // Asynchronous function to get posts and check like status
   Future<List<PostModel>> _getPostsWithLikes(
@@ -276,17 +268,16 @@ class _FeedScreenState extends State<FeedScreen> {
 
   Widget _buildPostItem(PostModel post) {
     final screenWidth = MediaQuery.of(context).size.width;
-
+    Color color = Color(0xFFE3E7f1);
     return Card(
+      color: color,
       child: Container(
         width: screenWidth,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding:
-                  const EdgeInsets.all(8.0),
-              // Padding around the content
+              padding: const EdgeInsets.all(8.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -295,8 +286,7 @@ class _FeedScreenState extends State<FeedScreen> {
                       FutureBuilder<Map<String, dynamic>>(
                         future: _getUserData(post.userId),
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
                             return CircularProgressIndicator();
                           }
 
@@ -307,29 +297,22 @@ class _FeedScreenState extends State<FeedScreen> {
                           final userData = snapshot.data!;
                           final fullName = userData['fullName']!;
                           final profilePicture = userData['profilePicture']!;
-                          final isDefaultImage =
-                              userData['isDefaultImage'] as bool;
+                          final isDefaultImage = userData['isDefaultImage'] as bool;
 
                           return Row(
                             children: [
                               CircleAvatar(
                                 radius: 20,
                                 backgroundImage: isDefaultImage
-                                    ? AssetImage(
-                                            'lib/assets/images/profile/p2.png')
-                                        as ImageProvider
+                                    ? AssetImage('lib/assets/images/profile/p2.png') as ImageProvider
                                     : NetworkImage(profilePicture),
                               ),
                               SizedBox(width: 8),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(fullName,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold)),
-                                  Text(_formatTimestamp(post.timestamp),
-                                      style: TextStyle(
-                                          color: Colors.grey, fontSize: 12)),
+                                  Text(fullName, style: TextStyle(fontWeight: FontWeight.bold)),
+                                  Text(_formatTimestamp(post.timestamp), style: TextStyle(color: Colors.grey, fontSize: 12)),
                                 ],
                               ),
                             ],
@@ -354,9 +337,7 @@ class _FeedScreenState extends State<FeedScreen> {
                     ],
                   ),
                   SizedBox(height: 10),
-                   Text(post.content,
-                   textAlign: TextAlign.justify,
-                   ),
+                  Text(post.content, textAlign: TextAlign.justify),
                 ],
               ),
             ),
@@ -368,17 +349,16 @@ class _FeedScreenState extends State<FeedScreen> {
                   _buildMediaSection(post.mediaPaths), // Display the media
 
                   // Like and comment buttons positioned at the bottom
-                  // Like and comment buttons positioned at the bottom
                   Positioned(
-                    bottom: 10, // Adjust the position to place it at the bottom of the picture
+                    bottom: 10,
                     left: 0,
                     right: 0,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0), // Add padding
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
                       child: Align(
                         alignment: Alignment.bottomCenter,
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween, // Spread the buttons
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             // Like Button
                             Flexible(
@@ -392,7 +372,7 @@ class _FeedScreenState extends State<FeedScreen> {
                                 children: [
                                   Expanded(
                                     child: GestureDetector(
-                                      onTap: () => _openCommentPopup(post), // Comment action on tap
+                                      onTap: () => _openCommentPopup(post),
                                       child: Container(
                                         decoration: BoxDecoration(
                                           color: Colors.grey[200]!.withOpacity(0.8),
@@ -405,11 +385,10 @@ class _FeedScreenState extends State<FeedScreen> {
                                             if (!snapshot.hasData) {
                                               return const Center(
                                                 child: Row(
-                                                  mainAxisAlignment: MainAxisAlignment.center, // Center the content
+                                                  mainAxisAlignment: MainAxisAlignment.center,
                                                   children: [
                                                     Icon(Icons.comment, color: Colors.blue),
-                                                    Text(' 0 comments',
-                                                        style: TextStyle(fontSize: 14, color: Colors.blue)),
+                                                    Text(' 0 comments', style: TextStyle(fontSize: 14, color: Colors.blue)),
                                                   ],
                                                 ),
                                               );
@@ -417,11 +396,10 @@ class _FeedScreenState extends State<FeedScreen> {
                                             final commentAndReplyCount = snapshot.data!;
                                             return Center(
                                               child: Row(
-                                                mainAxisAlignment: MainAxisAlignment.center, // Center the content
+                                                mainAxisAlignment: MainAxisAlignment.center,
                                                 children: [
                                                   const Icon(Icons.comment, color: Colors.blue),
-                                                  Text(' $commentAndReplyCount comments',
-                                                      style: const TextStyle(fontSize: 14, color: Colors.blue)),
+                                                  Text(' $commentAndReplyCount comments', style: const TextStyle(fontSize: 14, color: Colors.blue)),
                                                 ],
                                               ),
                                             );
@@ -429,7 +407,7 @@ class _FeedScreenState extends State<FeedScreen> {
                                         ),
                                       ),
                                     ),
-                                  )
+                                  ),
                                 ],
                               ),
                             ),
@@ -437,8 +415,7 @@ class _FeedScreenState extends State<FeedScreen> {
                         ),
                       ),
                     ),
-                  )
-
+                  ),
                 ],
               ),
           ],
@@ -446,6 +423,7 @@ class _FeedScreenState extends State<FeedScreen> {
       ),
     );
   }
+
 
   Widget _buildMediaSection(List<String> mediaPaths) {
     final screenWidth = MediaQuery.of(context).size.width;

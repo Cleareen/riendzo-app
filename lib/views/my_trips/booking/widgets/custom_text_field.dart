@@ -31,10 +31,12 @@ class CustomBookingTextField extends StatelessWidget {
           prefixIcon: icon != null ? Icon(icon) : null, // Add icon if provided
           labelText: text, // Field label
           hintText: hintText,
+    border: OutlineInputBorder( // Single border style
+    borderSide: BorderSide(color: Colors.grey, width: 1.0),
           // Placeholder text
            // Box around the field
         ),
       ),
-    );
+    ));
   }
 }
